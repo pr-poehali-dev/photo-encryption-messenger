@@ -400,7 +400,7 @@ const Index = () => {
                   Войти
                 </Button>
                 <div className="text-center text-sm text-gray-600">
-                  Тестовые аккаунты: dima/38674128dima, alex/123, maria/123
+                  это лучшый семейный чат :)
                 </div>
               </TabsContent>
 
