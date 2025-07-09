@@ -5,13 +5,177 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Icon from "@/components/ui/icon";
 
 const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authMode, setAuthMode] = useState("login");
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("messages");
-  const [userRole, setUserRole] = useState("user"); // For demo: 'user' or 'admin'
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      username: "dima",
+      password: "123",
+      role: "owner",
+      description: "Создатель FamilyChat. Люблю технологии и семейное общение.",
+      avatar: "D",
+    },
+    {
+      id: 2,
+      username: "alex",
+      password: "123",
+      role: "admin",
+      description: "Модератор сообщества",
+      avatar: "A",
+    },
+    {
+      id: 3,
+      username: "maria",
+      password: "123",
+      role: "user",
+      description: "Активный пользователь",
+      avatar: "M",
+    },
+  ]);
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [registerForm, setRegisterForm] = useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [editProfile, setEditProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    username: "",
+    description: "",
+  });
+  const [messageText, setMessageText] = useState("");
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [callType, setCallType] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      sender: "alex",
+      text: "Привет! Как дела?",
+      time: "14:30",
+      isOwn: false,
+    },
+    {
+      id: 2,
+      sender: "dima",
+      text: "Всё отлично! А у тебя?",
+      time: "14:32",
+      isOwn: true,
+    },
+    {
+      id: 3,
+      sender: "alex",
+      text: "🔒 Это зашифрованное сообщение!",
+      time: "14:35",
+      isOwn: false,
+      encrypted: true,
+    },
+  ]);
 
-  // Mock data
+  const handleLogin = () => {
+    const user = users.find(
+      (u) =>
+        u.username === loginForm.username && u.password === loginForm.password,
+    );
+    if (user) {
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      setProfileData({
+        username: user.username,
+        description: user.description,
+      });
+    } else {
+      alert("Неверный логин или пароль");
+    }
+  };
+
+  const handleRegister = () => {
+    if (registerForm.password !== registerForm.confirmPassword) {
+      alert("Пароли не совпадают");
+      return;
+    }
+    if (users.find((u) => u.username === registerForm.username)) {
+      alert("Пользователь уже существует");
+      return;
+    }
+    const newUser = {
+      id: users.length + 1,
+      username: registerForm.username,
+      password: registerForm.password,
+      role: "user",
+      description: "Новый пользователь FamilyChat",
+      avatar: registerForm.username.charAt(0).toUpperCase(),
+    };
+    setUsers([...users, newUser]);
+    setCurrentUser(newUser);
+    setIsAuthenticated(true);
+    setProfileData({
+      username: newUser.username,
+      description: newUser.description,
+    });
+  };
+
+  const handleSendMessage = () => {
+    if (messageText.trim()) {
+      const newMessage = {
+        id: messages.length + 1,
+        sender: currentUser.username,
+        text: messageText,
+        time: new Date().toLocaleTimeString().slice(0, 5),
+        isOwn: true,
+      };
+      setMessages([...messages, newMessage]);
+      setMessageText("");
+    }
+  };
+
+  const handleCall = (type) => {
+    setCallType(type);
+    setIsCallActive(true);
+    setTimeout(() => setIsCallActive(false), 3000);
+  };
+
+  const handleUpdateProfile = () => {
+    const updatedUser = {
+      ...currentUser,
+      username: profileData.username,
+      description: profileData.description,
+    };
+    setCurrentUser(updatedUser);
+    setUsers(users.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+    setEditProfile(false);
+  };
+
+  const handleRoleChange = (userId, newRole) => {
+    setUsers(users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+  };
+
   const chats = [
     {
       id: 1,
@@ -74,16 +238,161 @@ const Index = () => {
     { id: 2, name: "Разработка", subscribers: "12.8К", avatar: "Р" },
   ];
 
+  // Auth Screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md animate-fade-in">
+          <CardHeader className="text-center">
+            <div className="w-20 h-20 gradient-coral-teal rounded-full flex items-center justify-center mx-auto mb-4">
+              <Icon name="Heart" size={40} className="text-white" />
+            </div>
+            <CardTitle className="text-2xl font-heading">FamilyChat</CardTitle>
+            <p className="text-gray-600 font-body">
+              Семейный мессенджер для близких
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Tabs
+              value={authMode}
+              onValueChange={setAuthMode}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Вход</TabsTrigger>
+                <TabsTrigger value="register">Регистрация</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="login" className="space-y-4 mt-6">
+                <div className="space-y-2">
+                  <Label htmlFor="login-username">Имя пользователя</Label>
+                  <Input
+                    id="login-username"
+                    placeholder="Введите имя пользователя"
+                    value={loginForm.username}
+                    onChange={(e) =>
+                      setLoginForm({ ...loginForm, username: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Пароль</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="Введите пароль"
+                    value={loginForm.password}
+                    onChange={(e) =>
+                      setLoginForm({ ...loginForm, password: e.target.value })
+                    }
+                  />
+                </div>
+                <Button
+                  onClick={handleLogin}
+                  className="w-full gradient-coral-teal text-white"
+                >
+                  Войти
+                </Button>
+                <div className="text-center text-sm text-gray-600">
+                  Тестовые аккаунты: dima/123, alex/123, maria/123
+                </div>
+              </TabsContent>
+
+              <TabsContent value="register" className="space-y-4 mt-6">
+                <div className="space-y-2">
+                  <Label htmlFor="register-username">Имя пользователя</Label>
+                  <Input
+                    id="register-username"
+                    placeholder="Выберите имя пользователя"
+                    value={registerForm.username}
+                    onChange={(e) =>
+                      setRegisterForm({
+                        ...registerForm,
+                        username: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password">Пароль</Label>
+                  <Input
+                    id="register-password"
+                    type="password"
+                    placeholder="Создайте пароль"
+                    value={registerForm.password}
+                    onChange={(e) =>
+                      setRegisterForm({
+                        ...registerForm,
+                        password: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-confirm">Подтвердите пароль</Label>
+                  <Input
+                    id="register-confirm"
+                    type="password"
+                    placeholder="Повторите пароль"
+                    value={registerForm.confirmPassword}
+                    onChange={(e) =>
+                      setRegisterForm({
+                        ...registerForm,
+                        confirmPassword: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <Button
+                  onClick={handleRegister}
+                  className="w-full gradient-blue-purple text-white"
+                >
+                  Зарегистрироваться
+                </Button>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Call Overlay */}
+      {isCallActive && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+          <Card className="p-8 text-center">
+            <div className="w-24 h-24 gradient-coral-teal rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+              <Icon
+                name={callType === "video" ? "Video" : "Phone"}
+                size={40}
+                className="text-white"
+              />
+            </div>
+            <h3 className="text-xl font-heading mb-2">
+              {callType === "video" ? "Видео звонок" : "Аудио звонок"}
+            </h3>
+            <p className="text-gray-600 mb-4">Соединение с Алексей...</p>
+            <Button
+              onClick={() => setIsCallActive(false)}
+              variant="destructive"
+            >
+              <Icon name="PhoneOff" size={16} className="mr-2" />
+              Завершить
+            </Button>
+          </Card>
+        </div>
+      )}
+
       {/* Header */}
       <header className="gradient-coral-teal p-4 text-white shadow-lg">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 gradient-blue-purple rounded-xl flex items-center justify-center animate-pulse-glow">
-              <Icon name="MessageCircle" size={24} className="text-white" />
+            <div className="w-10 h-10 gradient-blue-purple rounded-xl flex items-center justify-center">
+              <Icon name="Heart" size={24} className="text-white" />
             </div>
-            <h1 className="text-2xl font-heading">SecureChat</h1>
+            <h1 className="text-2xl font-heading">FamilyChat</h1>
           </div>
           <div className="flex items-center space-x-4">
             <Button
@@ -101,15 +410,31 @@ const Index = () => {
               <Icon name="Settings" size={18} />
             </Button>
             <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-white text-messenger-coral">
-                dima
+              <AvatarFallback className="bg-white text-coral-500">
+                {currentUser?.username?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {userRole === "admin" && (
+            {currentUser?.role === "owner" && (
+              <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white animate-pulse">
+                👑 ВЛАДЕЛЕЦ
+              </Badge>
+            )}
+            {currentUser?.role === "admin" && (
               <Badge className="bg-yellow-400 text-black animate-pulse">
                 ⭐ АДМИН
               </Badge>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20"
+              onClick={() => {
+                setIsAuthenticated(false);
+                setCurrentUser(null);
+              }}
+            >
+              <Icon name="LogOut" size={18} />
+            </Button>
           </div>
         </div>
       </header>
@@ -175,12 +500,30 @@ const Index = () => {
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center justify-between font-heading">
                       Чаты
-                      <Button
-                        size="sm"
-                        className="gradient-coral-teal text-white"
-                      >
-                        <Icon name="Plus" size={16} />
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            className="gradient-coral-teal text-white"
+                          >
+                            <Icon name="Plus" size={16} />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Новый чат</DialogTitle>
+                            <DialogDescription>
+                              Начните новый разговор с семьей или друзьями
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <Input placeholder="Имя пользователя" />
+                            <Button className="w-full gradient-coral-teal text-white">
+                              Создать чат
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </CardTitle>
                     <Input placeholder="Поиск чатов..." className="font-body" />
                   </CardHeader>
@@ -214,7 +557,7 @@ const Index = () => {
                               {chat.lastMessage}
                             </p>
                             {chat.unread > 0 && (
-                              <Badge className="bg-messenger-coral text-white text-xs">
+                              <Badge className="bg-red-500 text-white text-xs">
                                 {chat.unread}
                               </Badge>
                             )}
@@ -232,7 +575,7 @@ const Index = () => {
                   <CardHeader className="gradient-coral-teal text-white">
                     <div className="flex items-center space-x-3">
                       <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-white text-messenger-coral">
+                        <AvatarFallback className="bg-white text-coral-500">
                           А
                         </AvatarFallback>
                       </Avatar>
@@ -245,6 +588,7 @@ const Index = () => {
                           size="sm"
                           variant="ghost"
                           className="text-white hover:bg-white/20"
+                          onClick={() => handleCall("audio")}
                         >
                           <Icon name="Phone" size={16} />
                         </Button>
@@ -252,6 +596,7 @@ const Index = () => {
                           size="sm"
                           variant="ghost"
                           className="text-white hover:bg-white/20"
+                          onClick={() => handleCall("video")}
                         >
                           <Icon name="Video" size={16} />
                         </Button>
@@ -267,43 +612,50 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="flex-1 p-4 overflow-y-auto">
                     <div className="space-y-4">
-                      <div className="flex">
-                        <div className="bg-gray-100 rounded-lg p-3 max-w-xs">
-                          <p className="font-body">Привет! Как дела?</p>
-                          <span className="text-xs text-gray-500">14:30</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-end">
-                        <div className="gradient-coral-teal text-white rounded-lg p-3 max-w-xs">
-                          <p className="font-body">Всё отлично! А у тебя?</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs opacity-90">14:32</span>
-                            <Icon
-                              name="Check"
-                              size={14}
-                              className="opacity-90"
-                            />
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.isOwn ? "justify-end" : ""}`}
+                        >
+                          <div
+                            className={`rounded-lg p-3 max-w-xs ${
+                              message.isOwn
+                                ? "gradient-coral-teal text-white"
+                                : message.encrypted
+                                  ? "glass-effect border border-yellow-300"
+                                  : "bg-gray-100"
+                            }`}
+                          >
+                            {message.encrypted && (
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Icon
+                                  name="Lock"
+                                  size={16}
+                                  className="text-yellow-600"
+                                />
+                                <span className="text-sm font-body text-yellow-700">
+                                  Зашифровано E2E
+                                </span>
+                              </div>
+                            )}
+                            <p className="font-body">{message.text}</p>
+                            <div className="flex items-center justify-between mt-1">
+                              <span
+                                className={`text-xs ${message.isOwn ? "opacity-90" : "text-gray-500"}`}
+                              >
+                                {message.time}
+                              </span>
+                              {message.isOwn && (
+                                <Icon
+                                  name="Check"
+                                  size={14}
+                                  className="opacity-90"
+                                />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex">
-                        <div className="glass-effect rounded-lg p-3 max-w-xs border border-yellow-300">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <Icon
-                              name="Lock"
-                              size={16}
-                              className="text-yellow-600"
-                            />
-                            <span className="text-sm font-body text-yellow-700">
-                              Зашифровано E2E
-                            </span>
-                          </div>
-                          <p className="font-body">
-                            Это зашифрованное сообщение! 🔒
-                          </p>
-                          <span className="text-xs text-gray-500">14:35</span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </CardContent>
                   <div className="border-t p-4">
@@ -320,8 +672,16 @@ const Index = () => {
                       <Input
                         placeholder="Введите сообщение..."
                         className="flex-1 font-body"
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handleSendMessage()
+                        }
                       />
-                      <Button className="gradient-coral-teal text-white">
+                      <Button
+                        className="gradient-coral-teal text-white"
+                        onClick={handleSendMessage}
+                      >
                         <Icon name="Send" size={16} />
                       </Button>
                     </div>
@@ -354,6 +714,7 @@ const Index = () => {
                         <Button
                           size="sm"
                           className="mt-2 gradient-coral-teal text-white"
+                          onClick={() => alert("Подписка оформлена!")}
                         >
                           Подписаться
                         </Button>
@@ -370,10 +731,29 @@ const Index = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-heading">Видео контент</h2>
-                <Button className="gradient-coral-teal text-white">
-                  <Icon name="Plus" size={16} className="mr-2" />
-                  Создать видео
-                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button className="gradient-coral-teal text-white">
+                      <Icon name="Plus" size={16} className="mr-2" />
+                      Создать видео
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Создать видео</DialogTitle>
+                      <DialogDescription>
+                        Поделитесь видео с семьей и друзьями
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <Input placeholder="Название видео" />
+                      <Textarea placeholder="Описание видео" />
+                      <Button className="w-full gradient-coral-teal text-white">
+                        Загрузить видео
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <Tabs defaultValue="all" className="w-full">
@@ -392,7 +772,7 @@ const Index = () => {
                         className="animate-fade-in hover:shadow-lg transition-shadow group"
                       >
                         <div className="relative">
-                          <div className="aspect-video bg-gradient-to-br from-messenger-blue to-messenger-purple rounded-t-lg flex items-center justify-center text-6xl">
+                          <div className="aspect-video bg-gradient-to-br from-blue-500 to-purple-600 rounded-t-lg flex items-center justify-center text-6xl">
                             {video.thumbnail}
                           </div>
                           {video.type === "live" && (
@@ -401,13 +781,16 @@ const Index = () => {
                             </Badge>
                           )}
                           {video.type === "short" && (
-                            <Badge className="absolute top-2 left-2 bg-messenger-orange text-white">
+                            <Badge className="absolute top-2 left-2 bg-orange-500 text-white">
                               ⚡ SHORT
                             </Badge>
                           )}
                           <Button
                             size="sm"
                             className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() =>
+                              alert(`Воспроизведение: ${video.title}`)
+                            }
                           >
                             <Icon name="Play" size={16} />
                           </Button>
@@ -420,7 +803,8 @@ const Index = () => {
                             <span>{video.views} просмотров</span>
                             <span>{video.duration}</span>
                           </div>
-                          {userRole === "admin" && (
+                          {(currentUser?.role === "admin" ||
+                            currentUser?.role === "owner") && (
                             <div className="flex space-x-2 mt-3">
                               <Button
                                 size="sm"
@@ -430,13 +814,36 @@ const Index = () => {
                                 <Icon name="Star" size={12} className="mr-1" />
                                 ⭐
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="text-xs"
-                              >
-                                <Icon name="Trash2" size={12} />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="text-xs"
+                                  >
+                                    <Icon name="Trash2" size={12} />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Удалить видео?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Это действие нельзя отменить. Видео будет
+                                      удалено навсегда.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Отмена
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction>
+                                      Удалить
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           )}
                         </CardContent>
@@ -465,14 +872,20 @@ const Index = () => {
                     Нет активных звонков
                   </h3>
                   <p className="text-gray-600 font-body mb-4">
-                    Начните видео или аудио звонок с друзьями
+                    Начните видео или аудио звонок с семьей
                   </p>
                   <div className="flex justify-center space-x-4">
-                    <Button className="gradient-coral-teal text-white">
+                    <Button
+                      className="gradient-coral-teal text-white"
+                      onClick={() => handleCall("audio")}
+                    >
                       <Icon name="Phone" size={16} className="mr-2" />
                       Аудио звонок
                     </Button>
-                    <Button className="gradient-blue-purple text-white">
+                    <Button
+                      className="gradient-blue-purple text-white"
+                      onClick={() => handleCall("video")}
+                    >
                       <Icon name="Video" size={16} className="mr-2" />
                       Видео звонок
                     </Button>
@@ -489,17 +902,35 @@ const Index = () => {
                 <CardContent className="p-6 text-center">
                   <Avatar className="w-24 h-24 mx-auto mb-4">
                     <AvatarFallback className="gradient-coral-teal text-white text-2xl">
-                      dima
+                      {currentUser?.username?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <h2 className="text-xl font-heading mb-2">dima</h2>
-                  {userRole === "admin" && (
-                    <Badge className="bg-yellow-400 text-black mb-4">
-                      ⭐ СУПЕР АДМИН ⭐
+                  <h2 className="text-xl font-heading mb-2">
+                    {currentUser?.username}
+                  </h2>
+                  {currentUser?.role === "owner" && (
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white mb-4">
+                      👑 ВЛАДЕЛЕЦ СЕРВИСА
                     </Badge>
                   )}
-                  <p className="text-gray-600 font-body mb-4">Статус: В сети</p>
-                  <Button className="w-full gradient-coral-teal text-white">
+                  {currentUser?.role === "admin" && (
+                    <Badge className="bg-yellow-400 text-black mb-4">
+                      ⭐ АДМИНИСТРАТОР
+                    </Badge>
+                  )}
+                  <p className="text-gray-600 font-body mb-4">
+                    {currentUser?.description}
+                  </p>
+                  <Button
+                    className="w-full gradient-coral-teal text-white"
+                    onClick={() => {
+                      setProfileData({
+                        username: currentUser.username,
+                        description: currentUser.description,
+                      });
+                      setEditProfile(true);
+                    }}
+                  >
                     Редактировать профиль
                   </Button>
                 </CardContent>
@@ -508,10 +939,71 @@ const Index = () => {
               <Card className="lg:col-span-2 animate-fade-in">
                 <CardHeader>
                   <CardTitle className="font-heading">
-                    Настройки безопасности
+                    {currentUser?.role === "owner"
+                      ? "Управление сервисом"
+                      : "Настройки безопасности"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {currentUser?.role === "owner" && (
+                    <div className="space-y-4 mb-6">
+                      <h4 className="font-heading text-lg">
+                        Управление пользователями
+                      </h4>
+                      {users
+                        .filter((u) => u.id !== currentUser.id)
+                        .map((user) => (
+                          <div
+                            key={user.id}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <Avatar>
+                                <AvatarFallback>
+                                  {user.username.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <h5 className="font-heading">
+                                  {user.username}
+                                </h5>
+                                <p className="text-sm text-gray-600">
+                                  {user.description}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Badge
+                                className={
+                                  user.role === "admin"
+                                    ? "bg-yellow-400 text-black"
+                                    : "bg-gray-400 text-white"
+                                }
+                              >
+                                {user.role === "admin"
+                                  ? "⭐ Админ"
+                                  : "👤 Пользователь"}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleRoleChange(
+                                    user.id,
+                                    user.role === "admin" ? "user" : "admin",
+                                  )
+                                }
+                              >
+                                {user.role === "admin"
+                                  ? "Убрать админа"
+                                  : "Сделать админом"}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <Icon
@@ -575,31 +1067,47 @@ const Index = () => {
         </Tabs>
       </main>
 
-      {/* Demo Controls */}
-      <div className="fixed bottom-4 right-4 z-50">
-        <Card className="glass-effect">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <span className="text-sm font-body">Роль:</span>
-              <Button
-                size="sm"
-                variant={userRole === "user" ? "default" : "outline"}
-                onClick={() => setUserRole("user")}
-              >
-                Пользователь
-              </Button>
-              <Button
-                size="sm"
-                variant={userRole === "admin" ? "default" : "outline"}
-                onClick={() => setUserRole("admin")}
-                className="bg-yellow-400 text-black hover:bg-yellow-500"
-              >
-                Админ dima
-              </Button>
+      {/* Edit Profile Dialog */}
+      <Dialog open={editProfile} onOpenChange={setEditProfile}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Редактировать профиль</DialogTitle>
+            <DialogDescription>Измените информацию о себе</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-username">Имя пользователя</Label>
+              <Input
+                id="edit-username"
+                value={profileData.username}
+                onChange={(e) =>
+                  setProfileData({ ...profileData, username: e.target.value })
+                }
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Описание</Label>
+              <Textarea
+                id="edit-description"
+                value={profileData.description}
+                onChange={(e) =>
+                  setProfileData({
+                    ...profileData,
+                    description: e.target.value,
+                  })
+                }
+                placeholder="Расскажите о себе..."
+              />
+            </div>
+            <Button
+              onClick={handleUpdateProfile}
+              className="w-full gradient-coral-teal text-white"
+            >
+              Сохранить изменения
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
