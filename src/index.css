@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,5 +99,29 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Roboto", sans-serif;
+  }
+
+  .font-heading {
+    font-family: "Roboto", sans-serif;
+    font-weight: 700;
+  }
+
+  .font-body {
+    font-family: "Open Sans", sans-serif;
+  }
+
+  .gradient-coral-teal {
+    background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+  }
+
+  .gradient-blue-purple {
+    background: linear-gradient(135deg, #45b7d1 0%, #9b87f5 100%);
+  }
+
+  .glass-effect {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 }
