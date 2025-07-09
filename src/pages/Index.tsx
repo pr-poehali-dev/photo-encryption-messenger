@@ -37,10 +37,12 @@ const Index = () => {
     {
       id: 1,
       username: "dima",
-      password: "123",
+      password: "38674128dima",
       role: "owner",
       description: "Создатель FamilyChat. Люблю технологии и семейное общение.",
       avatar: "D",
+      blockedUsers: [],
+      isOnline: true,
     },
     {
       id: 2,
@@ -49,6 +51,8 @@ const Index = () => {
       role: "admin",
       description: "Модератор сообщества",
       avatar: "A",
+      blockedUsers: [],
+      isOnline: true,
     },
     {
       id: 3,
@@ -57,6 +61,8 @@ const Index = () => {
       role: "user",
       description: "Активный пользователь",
       avatar: "M",
+      blockedUsers: [],
+      isOnline: false,
     },
   ]);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
@@ -73,6 +79,27 @@ const Index = () => {
   const [messageText, setMessageText] = useState("");
   const [isCallActive, setIsCallActive] = useState(false);
   const [callType, setCallType] = useState("");
+  const [blockDialogUser, setBlockDialogUser] = useState(null);
+  const [unblockRequestUser, setUnblockRequestUser] = useState(null);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: "video",
+      channel: "Новости технологий",
+      title: "Как создать мессенджер",
+      time: "2 мин назад",
+      read: false,
+    },
+    {
+      id: 2,
+      type: "unblock",
+      from: "maria",
+      text: "Просит разблокировать",
+      time: "5 мин назад",
+      read: false,
+    },
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -131,6 +158,8 @@ const Index = () => {
       role: "user",
       description: "Новый пользователь FamilyChat",
       avatar: registerForm.username.charAt(0).toUpperCase(),
+      blockedUsers: [],
+      isOnline: true,
     };
     setUsers([...users, newUser]);
     setCurrentUser(newUser);
@@ -142,6 +171,11 @@ const Index = () => {
   };
 
   const handleSendMessage = () => {
+    const targetUserId = 2; // Alex's ID for demo
+    if (!canSendMessage(targetUserId)) {
+      alert("Вы не можете отправить сообщение этому пользователю");
+      return;
+    }
     if (messageText.trim()) {
       const newMessage = {
         id: messages.length + 1,
@@ -156,6 +190,19 @@ const Index = () => {
   };
 
   const handleCall = (type) => {
+    const targetUserId = 2; // Alex's ID for demo
+
+    if (isUserBlocked(targetUserId)) {
+      // If user is blocked, show unblock request dialog
+      setUnblockRequestUser(targetUserId);
+      return;
+    }
+
+    if (!canCall(targetUserId)) {
+      alert("Вы не можете звонить этому пользователю");
+      return;
+    }
+
     setCallType(type);
     setIsCallActive(true);
     setTimeout(() => setIsCallActive(false), 3000);
@@ -174,6 +221,65 @@ const Index = () => {
 
   const handleRoleChange = (userId, newRole) => {
     setUsers(users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+  };
+
+  const handleBlockUser = (userId) => {
+    const updatedUser = {
+      ...currentUser,
+      blockedUsers: [...(currentUser.blockedUsers || []), userId],
+    };
+    setCurrentUser(updatedUser);
+    setUsers(users.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+    setBlockDialogUser(null);
+  };
+
+  const handleUnblockUser = (userId) => {
+    const updatedUser = {
+      ...currentUser,
+      blockedUsers: (currentUser.blockedUsers || []).filter(
+        (id) => id !== userId,
+      ),
+    };
+    setCurrentUser(updatedUser);
+    setUsers(users.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+  };
+
+  const isUserBlocked = (userId) => {
+    return currentUser?.blockedUsers?.includes(userId) || false;
+  };
+
+  const isBlockedByUser = (userId) => {
+    const user = users.find((u) => u.id === userId);
+    return user?.blockedUsers?.includes(currentUser?.id) || false;
+  };
+
+  const canSendMessage = (userId) => {
+    return !isUserBlocked(userId) && !isBlockedByUser(userId);
+  };
+
+  const canCall = (userId) => {
+    return !isBlockedByUser(userId);
+  };
+
+  const handleUnblockRequest = (fromUserId) => {
+    if (isUserBlocked(fromUserId)) {
+      alert(
+        "Пользователь просит разблокировать. Вы можете разблокировать его в настройках.",
+      );
+    }
+    setUnblockRequestUser(null);
+  };
+
+  const markNotificationRead = (notificationId) => {
+    setNotifications(
+      notifications.map((n) =>
+        n.id === notificationId ? { ...n, read: true } : n,
+      ),
+    );
+  };
+
+  const getUnreadNotificationsCount = () => {
+    return notifications.filter((n) => !n.read).length;
   };
 
   const chats = [
@@ -294,7 +400,7 @@ const Index = () => {
                   Войти
                 </Button>
                 <div className="text-center text-sm text-gray-600">
-                  Тестовые аккаунты: dima/123, alex/123, maria/123
+                  Тестовые аккаунты: dima/38674128dima, alex/123, maria/123
                 </div>
               </TabsContent>
 
@@ -402,6 +508,76 @@ const Index = () => {
             >
               <Icon name="Search" size={18} />
             </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20 relative"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Icon name="Bell" size={18} />
+                {getUnreadNotificationsCount() > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {getUnreadNotificationsCount()}
+                  </span>
+                )}
+              </Button>
+              {showNotifications && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border z-50">
+                  <div className="p-4 border-b">
+                    <h3 className="font-heading text-gray-900">Уведомления</h3>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-4 border-b hover:bg-gray-50 cursor-pointer ${!notification.read ? "bg-blue-50" : ""}`}
+                        onClick={() => markNotificationRead(notification.id)}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                            <Icon
+                              name={
+                                notification.type === "video"
+                                  ? "PlayCircle"
+                                  : "MessageCircle"
+                              }
+                              size={16}
+                              className="text-white"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            {notification.type === "video" ? (
+                              <div>
+                                <p className="text-sm font-body text-gray-900">
+                                  📺 Новое видео в канале "
+                                  {notification.channel}"
+                                </p>
+                                <p className="text-sm font-body text-gray-600">
+                                  {notification.title}
+                                </p>
+                                <span className="text-xs text-gray-500">
+                                  {notification.time}
+                                </span>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-sm font-body text-gray-900">
+                                  🔓 {notification.from} {notification.text}
+                                </p>
+                                <span className="text-xs text-gray-500">
+                                  {notification.time}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -600,13 +776,84 @@ const Index = () => {
                         >
                           <Icon name="Video" size={16} />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-white hover:bg-white/20"
-                        >
-                          <Icon name="MoreVertical" size={16} />
-                        </Button>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-white hover:bg-white/20"
+                            >
+                              <Icon name="MoreVertical" size={16} />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                Управление пользователем
+                              </DialogTitle>
+                              <DialogDescription>
+                                Дополнительные действия с Алексей
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              {isUserBlocked(2) ? (
+                                <Button
+                                  onClick={() => handleUnblockUser(2)}
+                                  className="w-full gradient-blue-purple text-white"
+                                >
+                                  <Icon
+                                    name="UserCheck"
+                                    size={16}
+                                    className="mr-2"
+                                  />
+                                  Разблокировать пользователя
+                                </Button>
+                              ) : (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="destructive"
+                                      className="w-full"
+                                    >
+                                      <Icon
+                                        name="UserX"
+                                        size={16}
+                                        className="mr-2"
+                                      />
+                                      Заблокировать пользователя
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Заблокировать пользователя?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Вы не сможете получать сообщения от
+                                        этого пользователя, и он не сможет вам
+                                        писать. Звонки будут ограничены.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Отмена
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleBlockUser(2)}
+                                      >
+                                        Заблокировать
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                              <Button variant="outline" className="w-full">
+                                <Icon name="Flag" size={16} className="mr-2" />
+                                Пожаловаться
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </div>
                   </CardHeader>
@@ -659,32 +906,57 @@ const Index = () => {
                     </div>
                   </CardContent>
                   <div className="border-t p-4">
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Icon name="Paperclip" size={16} />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Icon name="Image" size={16} />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Icon name="Mic" size={16} />
-                      </Button>
-                      <Input
-                        placeholder="Введите сообщение..."
-                        className="flex-1 font-body"
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        onKeyPress={(e) =>
-                          e.key === "Enter" && handleSendMessage()
-                        }
-                      />
-                      <Button
-                        className="gradient-coral-teal text-white"
-                        onClick={handleSendMessage}
-                      >
-                        <Icon name="Send" size={16} />
-                      </Button>
-                    </div>
+                    {!canSendMessage(2) ? (
+                      <div className="text-center py-4">
+                        <Icon
+                          name="UserX"
+                          size={32}
+                          className="mx-auto text-gray-400 mb-2"
+                        />
+                        <p className="text-gray-600 font-body text-sm">
+                          {isUserBlocked(2)
+                            ? "Вы заблокировали этого пользователя"
+                            : "Этот пользователь заблокировал вас"}
+                        </p>
+                        {isUserBlocked(2) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mt-2"
+                            onClick={() => handleUnblockUser(2)}
+                          >
+                            Разблокировать
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">
+                          <Icon name="Paperclip" size={16} />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Icon name="Image" size={16} />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Icon name="Mic" size={16} />
+                        </Button>
+                        <Input
+                          placeholder="Введите сообщение..."
+                          className="flex-1 font-body"
+                          value={messageText}
+                          onChange={(e) => setMessageText(e.target.value)}
+                          onKeyPress={(e) =>
+                            e.key === "Enter" && handleSendMessage()
+                          }
+                        />
+                        <Button
+                          className="gradient-coral-teal text-white"
+                          onClick={handleSendMessage}
+                        >
+                          <Icon name="Send" size={16} />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </Card>
               </div>
@@ -714,7 +986,23 @@ const Index = () => {
                         <Button
                           size="sm"
                           className="mt-2 gradient-coral-teal text-white"
-                          onClick={() => alert("Подписка оформлена!")}
+                          onClick={() => {
+                            const newNotification = {
+                              id: notifications.length + 1,
+                              type: "video",
+                              channel: channel.name,
+                              title: "Добро пожаловать в канал!",
+                              time: "только что",
+                              read: false,
+                            };
+                            setNotifications([
+                              newNotification,
+                              ...notifications,
+                            ]);
+                            alert(
+                              `Подписка на канал "${channel.name}" оформлена! 🔔`,
+                            );
+                          }}
                         >
                           Подписаться
                         </Button>
@@ -748,7 +1036,23 @@ const Index = () => {
                     <div className="space-y-4">
                       <Input placeholder="Название видео" />
                       <Textarea placeholder="Описание видео" />
-                      <Button className="w-full gradient-coral-teal text-white">
+                      <Button
+                        className="w-full gradient-coral-teal text-white"
+                        onClick={() => {
+                          const newNotification = {
+                            id: notifications.length + 1,
+                            type: "video",
+                            channel: "Мой канал",
+                            title: "Новое видео загружено!",
+                            time: "только что",
+                            read: false,
+                          };
+                          setNotifications([newNotification, ...notifications]);
+                          alert(
+                            "Видео загружено! Подписчики получили уведомление 📹",
+                          );
+                        }}
+                      >
                         Загрузить видео
                       </Button>
                     </div>
@@ -1108,6 +1412,34 @@ const Index = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Unblock Request Dialog */}
+      <AlertDialog
+        open={!!unblockRequestUser}
+        onOpenChange={() => setUnblockRequestUser(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Запрос на разблокировку</AlertDialogTitle>
+            <AlertDialogDescription>
+              Вы заблокировали этого пользователя. Хотите отправить звонок с
+              просьбой о разблокировке? Этот звонок будет содержать сообщение
+              "Разблокируй меня, пожалуйста".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                alert("Запрос на разблокировку отправлен! 📞");
+                setUnblockRequestUser(null);
+              }}
+            >
+              Отправить запрос
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
